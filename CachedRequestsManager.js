@@ -81,6 +81,11 @@ static get(HttpContext) {
     let url = HttpContext.req.url;
     let cachedRequest = CachedRequestsManager.find(url);
 
+    if (HttpContext.req.method !== 'GET') {
+        CachedRequestsManager.clear(url);
+        return false; 
+    }
+
     if (cachedRequest != null && cachedRequest.ETag != HttpContext.req.headers['if-none-match']) {
         HttpContext.response.JSON(cachedRequest.payload, cachedRequest.ETag, true);
         return true
