@@ -55,19 +55,26 @@ export default class CachedRequestsManager {
         cachedRequests = cachedRequests.filter(endpoint => endpoint.Expire_Time > now);
     }
     static get(HttpContext) {
+        //If the request is cacheable
         if (HttpContext.isCacheable) {
             let cacheFound = CachedRequestsManager.find(HttpContext.req.url);
-            if (cacheFound) {
+            if (cacheFound) { //If cache found
+
+                //If the ETag of the cached request is the same as the current ETag
                 if (Repository.getETag(HttpContext.path.model) == cacheFound.ETag) {
+                    //Return the cached content
                     HttpContext.response.JSON(cacheFound.content, cacheFound.ETag, true);
-                    return true;
+                    return true; //Return true to stop the request processing
                 } else {
+                    //If the ETag of the cached request is different from the current ETag
+                    //Clear the cache
                     CachedRequestsManager.clear(HttpContext.path.model);
-                    return false;
+                    return false; //Return false to continue the request processing
                 }
 
             }
         }
+        //If the request is not cacheable
         return false;
     }
 }
