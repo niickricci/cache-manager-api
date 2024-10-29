@@ -1,3 +1,5 @@
+import RouteRegister from './routeRegister.js';
+
 export const API_EndPoint = function (HttpContext) {
     return new Promise(async resolve => {
         if (!HttpContext.path.isAPI) {
@@ -58,3 +60,34 @@ export const API_EndPoint = function (HttpContext) {
         }
     })
 }
+
+export const Registered_EndPoint = function (HttpContext) {
+    return new Promise(async resolve => {
+        let route = RouteRegister.find(HttpContext);
+        if (route != null) {
+            try {
+                const { default: Controller } =
+                    await import('./controllers/' + HttpContext.path.controllerName + '.js');
+                let controller = new Controller(HttpContext);
+                if (route.method === 'POST' || route.method === 'PUT') {
+                    if (HttpContext.payload)
+                        controller[route.actionName](HttpContext.payload);
+                    else
+                        HttpContext.response.unsupported();
+                }
+                else {
+                    controller[route.actionName](route.id);
+                }
+                resolve(true);
+            } catch (error) {
+                console.log(BgRed + FgWhite, "Registered_EndPoint Error message: \n", error.message);
+                console.log(FgRed, "Stack: \n", error.stack);
+                HttpContext.response.notFound();
+                resolve(true);
+            }
+        }
+        resolve(false);
+    })
+}
+    
+// http://localhost:5000/bookmarks/list?sort=category,desc

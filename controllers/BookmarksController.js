@@ -6,4 +6,10 @@ export default class BookmarksController extends Controller {
     constructor(HttpContext) {
         super(HttpContext, new Repository(new BookmarkModel()));
     }
+
+    list() {
+        this.HttpContext.response.JSON(
+            this.repository.getAll(this.HttpContext.path.params, this.repository.ETag)
+        );
+    }
 }
