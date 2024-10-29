@@ -5,13 +5,18 @@
 // Lionel-Groulx College
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 import { log } from "./log.js";
-import CachedRequestsManager from "./CachedRequestsManager.js";
+import CachedRequests from "./CachedRequestsManager.js";
+import * as serverVariables from "./serverVariables.js";
+let hideHeadRequest = serverVariables.get("main.hideHeadRequest");
 
 export default class Response {
     constructor(HttpContext) {
         this.HttpContext = HttpContext;
         this.res = HttpContext.res;
         this.errorContent = "";
+    }
+    hiddenRequest() {
+        return (hideHeadRequest && this.HttpContext.req.method === 'HEAD');
     }
     status(number, errorMessage = '') {
         if (errorMessage) {
@@ -41,24 +46,24 @@ export default class Response {
         this.res.writeHead(204, { 'ETag': ETag });
         this.end();
     }
-    JSON(obj, ETag = "", fromCache = false) {                         // ok status with content
-        if (ETag != "")
+    addInRequestsCache(jsonObj, ETag) {
+        if (this.HttpContext.isCacheable)
+            CachedRequests.add(this.HttpContext.req.url, jsonObj, ETag);
+    }
+    JSON(obj, ETag = "", fromCache = false) {   // ok status with content
+        if (ETag !== "")
             this.res.writeHead(200, { 'content-type': 'application/json', 'ETag': ETag });
         else
             this.res.writeHead(200, { 'content-type': 'application/json' });
         if (obj != null) {
+            if (!fromCache)
+                this.addInRequestsCache(obj, ETag)
             let content = JSON.stringify(obj);
-            console.log(FgCyan+Bright, "Response payload -->", content.toString().substring(0, 75) + "...");
-
-            if (!fromCache && this.HttpContext.isCacheable) {
-                CachedRequestsManager.add(this.HttpContext.req.url, obj, ETag);
-            }
-
+            if (!this.hiddenRequest())
+                console.log(FgCyan + Bright, "Response payload -->", content.toString().substring(0, 75) + "...");
             return this.end(content);
-        }
-        else{
+        } else
             return this.end();
-        }
     }
     HTML(content) {
         this.res.writeHead(200, { 'content-type': 'text/html' });
