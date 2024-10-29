@@ -89,5 +89,3 @@ export const Registered_EndPoint = function (HttpContext) {
         resolve(false);
     })
 }
-    
-// http://localhost:5000/bookmarks/list?sort=category,desc

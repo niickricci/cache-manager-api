@@ -80,6 +80,21 @@ export default class Repository {
         }
         return maxId + 1;
     }
+    createId() {
+        if (this.model.securedId) {
+            let newId = '';
+            do { newId = uuidv1(); } while (this.indexOf(newId) > -1);
+            return newId;
+        } else {
+            let maxId = 0;
+            for (let object of this.objects()) {
+                if (object.Id > maxId) {
+                    maxId = object.Id;
+                }
+            }
+            return maxId + 1;
+        }
+    }
     checkConflict(instance) {
         let conflict = false;
         if (this.model.key)
@@ -90,14 +105,17 @@ export default class Repository {
         }
         return conflict;
     }
-    add(object) {
+   add(object) {
         delete object.Id;
-        object = { "Id": 0, ...object };
+        if (this.model.securedId)
+            object = { "Id": '', ...object };
+        else
+            object = { "Id": 0, ...object };
         this.model.validate(object);
         if (this.model.state.isValid) {
             this.checkConflict(object);
             if (!this.model.state.inConflict) {
-                object.Id = this.nextId();
+                object.Id = this.createId();
                 this.model.handleAssets(object);
                 this.objectsList.push(object);
                 this.write();
